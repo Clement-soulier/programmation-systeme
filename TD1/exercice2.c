@@ -1,5 +1,4 @@
 #include <ncurses.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 void INIT_SCREEN(void){
@@ -144,8 +143,7 @@ int is_there_a_winner(void){
                 if(count == 4){
                     return chip;
                 }
-            }
-            else{
+            }else{
                 chip = board[line][col];
                 count = 1;
             }
