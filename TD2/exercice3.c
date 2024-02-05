@@ -1,4 +1,3 @@
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -23,7 +22,7 @@ number to_number(unsigned int nbr, unsigned int base){
     unsigned int max_len = 64;
     number result;
     result.base = base;
-    result.digits = malloc(sizeof(unsigned char[max_len]));
+    result.digits = malloc(max_len * sizeof(unsigned char));
   	result.len = 0;
 	
     while(nbr > 0){
@@ -32,7 +31,7 @@ number to_number(unsigned int nbr, unsigned int base){
     }
     
     if(result.len < max_len){
-        unsigned char* tmp = realloc(result.digits, sizeof(unsigned char[result.len]));
+        unsigned char* tmp = realloc(result.digits, result.len * sizeof(unsigned char));
         result.digits = tmp;
     }
 	
@@ -45,7 +44,7 @@ unsigned int get_10_from_b(unsigned char str){
             return i;
         }
     }
-    raise (SIGABRT);
+    exit(-1);
 }
 
 unsigned int to_uint(number nbr){
@@ -57,7 +56,7 @@ unsigned int to_uint(number nbr){
 }
 
 char* to_string(number nbr){
-    char* result = malloc(sizeof(char[nbr.len]));
+    char* result = malloc(nbr.len * sizeof(char));
     for(int i = nbr.len - 1; i >= 0; i--){
         result[nbr.len - 1 - i] = nbr.digits[i];
     }
