@@ -1,23 +1,30 @@
 #include <stdio.h>
 
-typedef enum{RGB,HSL}colormode;
+typedef enum
+{
+    RGB,
+    HSL
+} colormode;
 
-typedef union{
+typedef union
+{
     colormode mode;
-    struct{
+    struct
+    {
         colormode mode;
-        unsigned int r: 8;
-        unsigned int g: 8;
-        unsigned int b: 8;
-    }rgb;
-    struct{
+        unsigned int r : 8;
+        unsigned int g : 8;
+        unsigned int b : 8;
+    } rgb;
+    struct
+    {
         colormode mode;
         double h, s, l;
-    }hsl;
-}pixel;
+    } hsl;
+} pixel;
 
 /*XPM*/
-static char*image[]={
+static char *image[] = {
     /*columnsrows colorschars-per-pixel*/
     "8421",
     "Xc#FF0000",
@@ -26,10 +33,10 @@ static char*image[]={
     "XOXOXOXO",
     "OXOXOXOX",
     "XOXOXOXO",
-    "OXOXOXOX"
-};
+    "OXOXOXOX"};
 
-pixel create_rgb_pixel(unsigned int *params){
+pixel create_rgb_pixel(unsigned int *params)
+{
     pixel pix;
     pix.mode = RGB;
     pix.rgb.r = params[0];
@@ -38,7 +45,8 @@ pixel create_rgb_pixel(unsigned int *params){
     return pix;
 }
 
-pixel create_hsl_pixel(double *params){
+pixel create_hsl_pixel(double *params)
+{
     pixel pix;
     pix.mode = HSL;
     pix.hsl.h = params[0];
@@ -47,15 +55,16 @@ pixel create_hsl_pixel(double *params){
     return pix;
 }
 
-pixel copy_pixel(pixel pix){
+pixel copy_pixel(pixel pix)
+{
     return pix;
 }
 
-int main(void){
+int main(void)
+{
     unsigned int p[] = {25, 90, 7};
     pixel pixel1 = create_rgb_pixel(p);
     pixel pixel2 = copy_pixel(pixel1);
-    pixel1.rgb.1 = 0;
+    pixel1.rgb.r = 0;
     printf("pixel1 %i pixel2 %i", pixel1.rgb.r, pixel2.rgb.r);
 }
-
