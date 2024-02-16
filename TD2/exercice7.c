@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 typedef enum
 {
     RGB,
@@ -20,12 +21,14 @@ typedef union
     } hsl;
 } pixel;
 
+unsigned char char_for_base[64] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/";
+
 /*XPM*/
 static char *image[] = {
     /*columnsrows colorschars-per-pixel*/
-    "8421",
-    "Xc#FF0000",
-    "Oc#0000FF",
+    "8 4 2 1",
+    "X c #FF0000",
+    "O c #0000FF",
     /*pixels*/
     "XOXOXOXO",
     "OXOXOXOX",
@@ -107,10 +110,6 @@ pixel to_rgb(pixel pix){
     double x = (double) (c * (1 - get_absolute_value((double) (((int) pix.hsl.h / 60) % 2) - 1)));
     double m = (double) (pix.hsl.l - (c / 2));
   
-  	printf("c: %f\n", c);
-  	printf("x: %f\n", x);
-  	printf("m: %f\n", m);
-
     double r = 0;
   	double g = 0;
   	double b = 0;
@@ -171,14 +170,26 @@ void gradient(pixel start, pixel stop, pixel *tab, unsigned int len){
     }
 }
 
+char* color_to_html(pixel pix){
+    pixel correct_pix = to_rgb(pix);
+    char *html_color = (char*)malloc(sizeof(char) * 8);
+    sprintf(html_color, "#%02X%02X%02X", correct_pix.rgb.r, correct_pix.rgb.g, correct_pix.rgb.b);
+    return html_color;
+}
 
 int main(void)
 {
-  pixel pixel1 = {.rgb.mode = RGB, .rgb.r = 30, .rgb.g = 9, .rgb.b = 89};
-  printf("r: %d, g: %d, b: %d\n", pixel1.rgb.r, pixel1.rgb.g, pixel1.rgb.b);
-  pixel pixel2 = to_hsl(pixel1);
-  printf("h: %f, s: %f, l: %f\n", pixel2.hsl.h, pixel2.hsl.s, pixel2.hsl.l);
-  pixel pixel3 = to_rgb(pixel2);
-  printf("r: %d, g: %d, b: %d", pixel3.rgb.r, pixel3.rgb.g, pixel3.rgb.b);
- 
+    pixel start = {.rgb.mode = RGB, .rgb.r = 150, .rgb.g = 89, .rgb.b = 90};
+    pixel stop = {.rgb.mode = RGB, .rgb.r = 190, .rgb.g = 40, .rgb.b = 200};
+    pixel tab[64];
+    gradient(start, stop, tab, 64);
+    printf("%i %i %i %i\n", 8, 8, 64, 64);
+    for(int i = 0; i < 64; i++){
+        printf("%c c %s\n", char_for_base[i] , color_to_html(tab[i]));
+    }
+    for(int i = 0; i < 64; i += 7){
+        printf("%c%c%c%c%c%c%c%c\n", char_for_base[i], char_for_base[i + 1], char_for_base[i + 2], char_for_base[i + 3], char_for_base[i + 4], char_for_base[i + 5], char_for_base[i + 6], char_for_base[i + 7]);
+    }
+    
 }
+
