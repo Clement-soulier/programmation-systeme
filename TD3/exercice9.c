@@ -118,7 +118,6 @@ void execute_operation(stack *s, char *sign){
         add(s);
     } else
     if(!strcmp(sign, "-")){
-        printf("succès\n");
         soustract(s);
     } else
     if(!strcmp(sign, "*")){

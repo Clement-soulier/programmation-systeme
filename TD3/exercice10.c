@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+size_t cmd_list_lenght = 128;
 extern int errno;
 
 void set_env(char *nom, char *valeur){
@@ -23,36 +24,72 @@ void delete_env(char *nom){
 }
 
 char *get_name(char *string){
-  size_t size = 0;
-  while(string[size] != '='){
-    size++;
-  }
-  printf("size: %li\n", size);
-  char *name = malloc((size + 1) * sizeof(char));
-  strncpy(name, string, size + 1);
-  name[size] = '\0';
-  return name;
+    size_t size = 0;
+    while(string[size] != '='){
+        size++;
+    }
+    char *name = malloc((size + 1) * sizeof(char));
+    if(!name){
+        exit(EXIT_FAILURE);
+    }
+    strncpy(name, string, size + 1);
+    name[size] = '\0';
+    return name;
 }
 
-int main(int argc, char *argv[]){
+void add_cmd(char* cmd_list, char *arg){
+  int list_lenght = (int) strlen(cmd_list) + 1;
+  int arg_lenght = (int) strlen(arg) + 1;
+  if((list_lenght - arg_lenght) >= 0){
+    strcat(cmd_list, arg);
+  }
+  else{
+    cmd_list_lenght += 60;
+    cmd_list = realloc(cmd_list, cmd_list_lenght * sizeof(char));
+    if(!cmd_list){
+      exit(EXIT_FAILURE);
+    }
+    strcat(cmd_list, arg);
+  }
+}
+
+int main(int argc, char* argv[]){
     int id = 1;
+    int cmd_mode = 1;
+    char *cmd = malloc(cmd_list_lenght * sizeof(char));
+    if(!cmd){
+        exit(EXIT_FAILURE);
+    }
+    strcpy(cmd, "");
     while(id < argc){
         char *arg = argv[id];
-        char *is_to_set = index(arg, 61);
-        if(strcmp(is_to_set, "=")){
-            char *name = get_name(arg);
-            char *value = 1 + is_to_set;
-            set_env(name, value);
-            free(name);
-            free(value);
+        if(cmd_mode == 1){
+            char *is_to_set = index(arg, 61);
+            if(is_to_set){
+                if(*(1 + is_to_set) == '\0'){
+                char *name = get_name(arg);
+                delete_env(name);
+                free(name);
+                }
+                else {
+                    char *name = get_name(arg);
+                    char *value = 1 + is_to_set;
+                    set_env(name, value);
+                    free(name);
+                }
+            }
+            else {
+                cmd_mode = 0;
+            }
             free(is_to_set);
-            free(arg);
         }
-        else if(){
-            char *name = get_name(arg);
-            delete_env(name);
-
+        else {
+            add_cmd(cmd, arg);
         }
         id++;
     }
+    if(cmd[0] != '\0'){
+        return system(cmd);
+    }
+    return EXIT_SUCCESS;
 }
