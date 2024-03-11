@@ -84,12 +84,20 @@ void cp_file(char *src, char *tgt){
         }
         write(opened_tgt, buffer, to_write);
         if(errno){
-            fprintf(stderr, "Erreur lors de l'écriture de %s: %s\n", src, strerror(errno));
+            fprintf(stderr, "Erreur lors de l'écriture de %s: %s\n", tgt, strerror(errno));
             exit(EXIT_FAILURE);
         }
     }while(to_write != 0);
-    close(opened_src);
-    close(opened_tgt);
+    errno = 0;
+    if(close(opened_src)){
+        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", src, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    errno = 0;
+    if(close(opened_tgt)){
+        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", tgt, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     free(buffer);
     cp_mode(src, tgt);
 }
