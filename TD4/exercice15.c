@@ -39,7 +39,7 @@ char *filename(pid_t PID){
 
 void enregistrer(pid_t PID, long unsigned int entier){
     char *name = filename(PID);
-    int file = open(name, O_WRONLY);
+    int file = open(name, O_WRONLY | O_CREAT, S_IRWXO);
     if(errno){
         fprintf(stderr, "%s", strerror(errno));
         exit(EXIT_FAILURE);
