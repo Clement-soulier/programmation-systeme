@@ -41,53 +41,57 @@ void enregistrer(pid_t PID, long unsigned int entier){
     char *name = filename(PID);
     int file = open(name, O_WRONLY | O_CREAT, S_IRWXO);
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de l'ouverture de %s: %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     errno = 0;
     write(file, &entier, sizeof(long unsigned int));
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de l'écriture de %s, %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     errno = 0;
     close(file);
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
 
 long unsigned int lecture(pid_t PID){
     errno = 0;
-    int file = open(filename(PID), O_RDONLY);
+    char *name = filename(PID);
+    int file = open(name, O_RDONLY);
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de l'ouverture de %s: %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     long unsigned int reponse;
     errno = 0;
     read(file, &reponse, sizeof(long unsigned int));
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de l'ouvture de %s, %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     errno = 0;
     close(file);
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
+    free(name);
     return reponse;
 }
 
 void delete(pid_t PID){
     errno = 0;
-    unlink(filename(PID));
+    char *name = filename(PID);
+    unlink(name);
     if(errno){
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "Erreur lors de la suppression de %s: %s\n", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
+    free(name);
 }
 
 int zeros(char *s, long unsigned int n){
@@ -132,21 +136,24 @@ int main(void){
         errno = 0;
         pid = fork();
         if(pid == -1){
-            fprintf(stderr, "%s", strerror(errno));
+            fprintf(stderr, "Erreur lors de la création d'un processus %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         } else if(pid == 0){
             bruteforce(i, 10, 6);
         }
     }
     while(1){
-        pid = waitpid(0, &status, WNOHANG);
-        if(status > 0){
-            if(WIFEXITED(status)){
-                printf("%lu\n", lecture(pid));
-                delete(pid);
-                exit(0);
+        errno = 0;
+        pid = waitpid(-1, &status, WNOHANG);
+        if(errno){
+            fprintf(stderr, "Erreur lors de l'attente d'un processus fils: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        if(WIFEXITED(status)){
+            printf("%lu\n", lecture(pid));
+            delete(pid);
+            exit(0);
 
-            }
         }
     }
 }

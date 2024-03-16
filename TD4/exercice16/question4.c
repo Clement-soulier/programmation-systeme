@@ -52,36 +52,40 @@ void enregistrer(pid_t PID, int entier){
         fprintf(stderr, "erreur lors de la fermeture pour l'enregistrement %s: %s\n", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
+    free(name);
 }
 
 int lecture(pid_t PID){
     errno = 0;
-    int file = open(filename(PID), O_RDONLY);
+    char *name = filename(PID);
+    int file = open(name, O_RDONLY);
     if(errno){
-        fprintf(stderr, "erreur lors de l'ouverture pour la lecture %s: %s\n", filename(PID), strerror(errno));
+        fprintf(stderr, "erreur lors de l'ouverture pour la lecture %s: %s\n", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     int reponse;
     errno = 0;
     read(file, &reponse, sizeof(int));
     if(errno){
-        fprintf(stderr, "erreur lors de la lecture %s\n", strerror(errno));
+        fprintf(stderr, "erreur lors de la lecture de %s: %s\n", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
     errno = 0;
     close(file);
     if(errno){
-        fprintf(stderr, "erreur lors de la fermeture après la lecture %s\n", strerror(errno));
+        fprintf(stderr, "erreur lors de la fermeture de %s %s\n", name,strerror(errno));
         exit(EXIT_FAILURE);
     }
+    free(name);
     return reponse;
 }
 
 void delete(pid_t PID){
     errno = 0;
-    unlink(filename(PID));
+    char *name = filename(PID);
+    unlink(name);
     if(errno){
-        fprintf(stderr, "erreur lors de la supression du fichier %s\n", strerror(errno));
+        fprintf(stderr, "erreur lors de la supression de %s:  %s\n", name, strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -112,16 +116,21 @@ int main(void){
         errno = 0;
         pid = fork();
         if(pid == -1){
-            fprintf(stderr, "%s", strerror(errno));
+            fprintf(stderr, "Erreur lors de la création d'un processu enfant: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         } else if(pid == 0){
             enregistrer(getpid(), tab[i]);
-            sleep(tab[i] + offset);
+            usleep(((tab[i] + offset) * 700) + 1000);
             exit(0);
         }
     }
     for(int i = 0; i < 10; i++){
+        errno = 0;
         pid = wait(&status);
+        if(errno){  
+            fprintf(stderr, "Erreur lors de l'attente d'un processus enfant: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
         if(WIFEXITED(status)){
             tab[i] = lecture(pid);
             delete(pid);
