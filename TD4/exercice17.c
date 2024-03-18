@@ -75,4 +75,7 @@ int main(void){
             }
         }
     }
+    free(tab);
+    free(check);
+    free(is_finished);
 }
