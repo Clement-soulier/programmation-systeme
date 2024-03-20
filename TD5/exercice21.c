@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <glob.h>
 
 int main(void){
     int *pipefd = malloc(2 * sizeof(int));
@@ -26,10 +28,25 @@ int main(void){
             perror("close");
             exit(EXIT_FAILURE);
         }
-        if(execlp("ls", "ls", "-l", NULL) == -1){
-            perror("execlp" "ls");
+        glob_t output;
+        if(glob("*.c", GLOB_ERR, NULL, &output)){
+            perror("glob");
             exit(EXIT_FAILURE);
         }
+        size_t count;
+        void *buffer = malloc(255 * sizeof(char));
+        for(size_t i = 0; i < output.gl_pathc; i++){
+            strcpy(buffer, "");
+            strcat(buffer, output.gl_pathv[i]);
+            strcat(buffer, "\n");
+            count = strlen(output.gl_pathv[i]);
+            if(write(pipefd[1], buffer, count + 1) == -1){
+                perror("write");
+                exit(EXIT_FAILURE);
+            }
+        }
+        free(buffer);
+        globfree(&output);
         exit(0);
     }
 

@@ -25,82 +25,14 @@ char *md5hash(char *str){
 extern int errno;
 size_t name_buffer_size = 255;
 
-char *filename(pid_t PID){
-    char *name = malloc(name_buffer_size * sizeof(char));
-    strcpy(name, "");
-    strcat(name, "found");
-    strcat(name, ".");
-    char *buffer = malloc(6 * sizeof(char));
-    sprintf(buffer, "%i", PID);
-    strcat(name, buffer);
-    free(buffer);
-    return name;
-}
 
-void enregistrer(pid_t PID, long unsigned int entier){
-    char *name = filename(PID);
-    int file = open(name, O_WRONLY | O_CREAT, S_IRWXO);
-    if(errno){
-        fprintf(stderr, "Erreur lors de l'ouverture de %s: %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    errno = 0;
-    write(file, &entier, sizeof(long unsigned int));
-    if(errno){
-        fprintf(stderr, "Erreur lors de l'écriture de %s, %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    errno = 0;
-    close(file);
-    if(errno){
-        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-}
-
-long unsigned int lecture(pid_t PID){
-    errno = 0;
-    char *name = filename(PID);
-    int file = open(name, O_RDONLY);
-    if(errno){
-        fprintf(stderr, "Erreur lors de l'ouverture de %s: %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    long unsigned int reponse;
-    errno = 0;
-    read(file, &reponse, sizeof(long unsigned int));
-    if(errno){
-        fprintf(stderr, "Erreur lors de l'ouvture de %s, %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    errno = 0;
-    close(file);
-    if(errno){
-        fprintf(stderr, "Erreur lors de la fermeture de %s: %s", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    free(name);
-    return reponse;
-}
-
-void delete(pid_t PID){
-    errno = 0;
-    char *name = filename(PID);
-    unlink(name);
-    if(errno){
-        fprintf(stderr, "Erreur lors de la suppression de %s: %s\n", name, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    free(name);
-}
-
-int zeros(char *s, long unsigned int n){
-    long unsigned int nombre_caractere = strlen(s);
+int zeros(char *s, int n){
+    int nombre_caractere = strlen(s);
     if(nombre_caractere < n){
         return 0;
     }
-    long unsigned int compteur = 0;
-    for(long unsigned int i = 0; i < nombre_caractere; i++){
+    int compteur = 0;
+    for(int i = 0; i < nombre_caractere; i++){
         if(s[i] == 0){
             compteur++;
         } else {
@@ -114,46 +46,72 @@ int zeros(char *s, long unsigned int n){
     }
 }
 
-void bruteforce(long unsigned int first, long unsigned int step, long unsigned int zero){
-    long unsigned int number = first;
-    while(1){
-        char *text_int = malloc(6 * sizeof(char));
-        sprintf(text_int, "%lu", number);
-        char *text_hashed = md5hash(text_int);
-        if(zeros(text_hashed, zero)){
-            pid_t PID = getpid();
-            enregistrer(PID, number);
-            exit(0);
-        }
-        number += step;
-    }
-}
-
 int main(void){
+    int pipes[10][2];
     pid_t pid;
+    pid_t pids[10];
     int status;
-    for(long unsigned int i = 0; i < 10; i++){
+    for(int i = 0; i < 10; i++){
+        if(pipe(pipes[i]) == -1){
+            perror("pipes");
+            exit(EXIT_FAILURE);
+        }
+    }
+    for(int i = 0; i < 10; i++){
         errno = 0;
         pid = fork();
+        pids[i] = pid;
         if(pid == -1){
-            fprintf(stderr, "Erreur lors de la création d'un processus %s\n", strerror(errno));
+            perror("fork");
             exit(EXIT_FAILURE);
         } else if(pid == 0){
-            bruteforce(i, 10, 6);
+            if(close(pipes[i][0]) == -1){
+                perror("close");
+                exit(EXIT_FAILURE);
+            }
+            int number = i;
+            char *text_int = malloc(6 * sizeof(char));
+            while(1){
+                sprintf(text_int, "%i", number);
+                char *text_hashed = md5hash(text_int);
+                if(zeros(text_hashed, 0)){
+                    if(write(pipes[i][1], &number, sizeof(int)) == -1){
+                        perror("write");
+                        exit(EXIT_FAILURE);
+                    }
+                    exit(0);
+                }
+                number += 10;
+            }
         }
     }
-    while(1){
-        errno = 0;
-        pid = waitpid(-1, &status, WNOHANG);
-        if(errno){
-            fprintf(stderr, "Erreur lors de l'attente d'un processus fils: %s\n", strerror(errno));
+    int finished_child = 0;
+    int buffer;
+    while(finished_child < 5){
+        for(int i = 0; i < 10; i++){
+            errno = 0;
+            pid = waitpid(pids[i], &status, WNOHANG);
+            if(errno){
+                perror("waitpid");
+                exit(EXIT_FAILURE);
+            }
+            if(WIFEXITED(status)){
+                read(pipes[i][1], &buffer, sizeof(int));
+                printf("%i\n", buffer);
+                finished_child++;
+            }
+        }
+    }
+    for(int i = 0; i < 10; i++){
+        if(close(pipes[i][0]) == -1){
+            perror("close");
             exit(EXIT_FAILURE);
         }
-        if(WIFEXITED(status)){
-            printf("%lu\n", lecture(pid));
-            delete(pid);
-            exit(0);
 
+        if(close(pipes[i][1]) == -1){
+            perror("close");
+            exit(EXIT_FAILURE);
         }
+
     }
 }
