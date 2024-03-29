@@ -114,7 +114,7 @@ int zeros(char *s, int n){
     }
 }
 
-void bruteforce(int first, long unsigned int step, long unsigned int zero){
+void bruteforce(int first, int step, long unsigned int zero){
     int number = first;
     char *text_int = malloc(6 * sizeof(char));
     while(1){

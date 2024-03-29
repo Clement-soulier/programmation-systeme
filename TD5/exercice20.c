@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,18 +23,10 @@ char *md5hash(char *str){
     return hash;
 }
 
-extern int errno;
-size_t name_buffer_size = 255;
-
-
 int zeros(char *s, int n){
-    int nombre_caractere = strlen(s);
-    if(nombre_caractere < n){
-        return 0;
-    }
     int compteur = 0;
-    for(int i = 0; i < nombre_caractere; i++){
-        if(s[i] == 0){
+    for(int i = 0; i != 0; i++){
+        if(s[i] == '0'){
             compteur++;
         } else {
             break;
@@ -69,16 +62,23 @@ int main(void){
                 perror("close");
                 exit(EXIT_FAILURE);
             }
+            size_t writed;
             int number = i;
             char *text_int = malloc(6 * sizeof(char));
             while(1){
                 sprintf(text_int, "%i", number);
                 char *text_hashed = md5hash(text_int);
                 if(zeros(text_hashed, 0)){
-                    if(write(pipes[i][1], &number, sizeof(int)) == -1){
+                    writed = write(pipes[i][1], &number, sizeof(int));
+                    if(writed == -1){
                         perror("write");
                         exit(EXIT_FAILURE);
+                    } else if(writed != sizeof(int)){
+                        printf("L'entier n'a pas été écris correctement\n");
+                        exit(EXIT_FAILURE);
                     }
+                    free(text_int);
+                    free(text_hashed);
                     exit(0);
                 }
                 number += 10;
@@ -90,17 +90,21 @@ int main(void){
     while(finished_child < 5){
         for(int i = 0; i < 10; i++){
             errno = 0;
-            pid = waitpid(pids[i], &status, WNOHANG);
+            pid = wait(&status);
             if(errno){
                 perror("waitpid");
                 exit(EXIT_FAILURE);
             }
             if(WIFEXITED(status)){
                 read(pipes[i][1], &buffer, sizeof(int));
+                kill(pid, SIGINT);
                 printf("%i\n", buffer);
                 finished_child++;
             }
         }
+    }
+    for(int i = 0; i < 10; i++){
+        kill(pids[i], SIGINT);
     }
     for(int i = 0; i < 10; i++){
         if(close(pipes[i][0]) == -1){
